@@ -11,7 +11,7 @@ After cloning this repository, you will need to copy request headers from your b
 This program uses a great project named ytmusicapi to interact with YT Music. I will link to their setup instructions as they are relevant here: https://ytmusicapi.readthedocs.io/en/latest/setup.html#authenticated-requests
 
 ## Usage
-
+```
 Available commands are:
 -d directory	Scans all subdirectories under directory for music files and adds them to library
 -p playlist	Adds all playlist items to library and to the named playlist
@@ -41,3 +41,4 @@ Note: if you use field search terms, all query terms must be contained in them. 
 	Correct:	artist:queen "album:news of the world"
 	Correct:	"title:pumped up kicks"
 	Incorrect:	"artist:black eyed peas" retarded
+```
