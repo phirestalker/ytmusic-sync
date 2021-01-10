@@ -60,7 +60,7 @@ def loadCache(ytmusic, cacheFile):
         if check['trackCount'] != likes['trackCount']:
             print('getting liked songs from YT music')
             likes = ytmusic.get_liked_songs(100000)
-    except KeyError:
+    except Exception:
         os.remove(authFile)
         print('Authorization expired. Next run will require pasted headers.')
         exit(1)
