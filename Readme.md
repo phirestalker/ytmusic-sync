@@ -10,6 +10,8 @@ Delete all of your likes, uploads, and/or library. Also delete items matching a 
 After cloning this repository, you will need to copy request headers from your browser.
 This program uses a great project named ytmusicapi to interact with YT Music. I will link to their setup instructions as they are relevant here: https://ytmusicapi.readthedocs.io/en/latest/setup.html#authenticated-requests
 
+NOTE: on Macos terminal app you will need to copy the headers and then run `pbpaste | python3 ytmusic-sync.py`
+
 ## Usage
 ```
 Available commands are:
