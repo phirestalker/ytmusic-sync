@@ -9,6 +9,7 @@ import json
 import pickle
 import mutagen
 import configparser
+import ytmusicapi
 from ytmusicapi import YTMusic
 from datetime import datetime, timedelta
 from time import strftime, gmtime, sleep
@@ -148,6 +149,7 @@ def loadConfig():
         firstArg = sys.argv[1]
 
     if configPath.exists():
+        print('loading config from file')
         config.read(configPath)
         # if the ini file contains a relative path for the cache file use userDir as a base
         cacheFile = pathlib.Path(config['DEFAULT']['cachefile']) if config['DEFAULT']['cachefile'].startswith('/') else userDir / config['DEFAULT']['cachefile']
@@ -168,9 +170,9 @@ def loadConfig():
         config['DEFAULT']['uploadsongs'] = 'no'
         config['DEFAULT']['mbhost'] = 'musicbrainz.org'
         config['DEFAULT']['mbrateLimit'] = '1'
-        config['DEFAULT']['wordRatio'] = 96
-        config['DEFAULT']['phraseRatio'] = 89
-        config['DEFAULT']['YTDelay'] = 0.1
+        config['DEFAULT']['wordRatio'] = '96'
+        config['DEFAULT']['phraseRatio'] = '89'
+        config['DEFAULT']['YTDelay'] = '0.1'
         config['DEFAULT']['ignoredartists'] = json.dumps(['karaoke', 'in the style of', 'tribute'])
         config['DEFAULT']['ignoredgenres'] = json.dumps(['^punk', '^grunge' ,'^hard', '^metal', '^classical', '^alternative', '^rap', '^hip hop', '^holiday', '^christmas'])
         cacheFile = userDir / 'cache.p'
@@ -193,9 +195,9 @@ def authenticate(reset = False):
     if reset:
         os.remove(authFile)
     if authFile.exists():
-        ytmusic = YTMusic(authFile)
+        ytmusic = YTMusic(str(authFile))
     else:
-        YTMusic.setup(filepath=authFile)
+        ytmusicapi.setup(filepath=str(authFile))
         exit(0)
 
 def myExceptHandler(exctype, value, traceback):
@@ -374,13 +376,15 @@ def addLikes():
 
 # create or update the smart playlists from the config file
 def smartPlaylists():
-    fillMBdata(MBfile, MBdata, [('uploads', uploads), ('library', library), ('likes', likes['tracks'])])
+    global config
+    MBdata = fillMBdata(cacheFile, config, MBfile, [('uploads', uploads), ('library', library), ('likes', likes['tracks'])])
     addTracks = {}
     libraryPlists = config.sections() or []
     rules = {}
     smartPlaylists = []
 
     if not MBdata or not libraryPlists:
+        print('No smart playlists found in config')
         exit(0)
     for pName in libraryPlists:
         # check if a playlist with pName already exists
@@ -424,9 +428,10 @@ def smartPlaylists():
                         addTracks[smart['id']].append(song['videoId'])
     # add collected sonngs
     for id, tracks in addTracks.items():
-        name = next(p['title'] for p in smartPlaylists if p['id'] == id)
-        print(f'Adding {len(tracks)} songs to playlist "{name}"')
-        ytmusic.add_playlist_items(id,tracks,None,True)
+        if tracks:
+            name = next(p['title'] for p in smartPlaylists if p['id'] == id)
+            print(f'Adding {len(tracks)} songs to playlist "{name}"')
+            ytmusic.add_playlist_items(id,tracks,None,True)
 
 # delete items from YT Music
 def deleteThis(query):

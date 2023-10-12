@@ -129,7 +129,6 @@ def getMBinfo(config, title, artist, videoId):
     relation_type = None
     aRatio = wordRatio if len(artist.split(' ')) == 1 else phraseRatio
     # set oldest release year to 0 so it is an int for matching later
-    oldest_release = {'year': 0}
 
     results = musicbrainzngs.search_recordings(limit=25, artist=artist,recording=title)['recording-list']
 
@@ -137,6 +136,7 @@ def getMBinfo(config, title, artist, videoId):
     song = filterSongs(results, [('title', title, phraseRatio), ('artist-credit', artist, aRatio)], 'length', True, True)
     if not song:
         return None
+    oldest_release = song if song.get('year') else {'year': 2023}
     # get the earliest release date for a song instead of its re-release date
     (oldest_release, relation_type) = recurse_relations(song['id'], oldest_release, relation_type)
     # track itself contains genres or folksonomy tags as MusicBrainz calls them
@@ -156,7 +156,8 @@ def getRule(ruleSection):
     rule = {}
     start, end = None, None
     if 'year' in ruleSection.keys():
-        year = re.sub(r'\w', '', ruleSection['year'])
+        # year = re.sub(r'\w', '', ruleSection['year'])
+        year = ruleSection['year']
         # split year ranges into start and end. If there is one year make it the start,
         # and if there is a list of years
         if ',' in year:

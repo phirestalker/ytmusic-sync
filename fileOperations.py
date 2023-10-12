@@ -3,6 +3,8 @@ from ytmusicapi import YTMusic
 import pathlib
 import pickle
 import csv
+from tqdm import tqdm
+
 
 from utils import *
 
@@ -22,12 +24,13 @@ def saveCache(cacheFile, MBfile, MBdata, cache):
                 print(f'Problem writing MB cache file: {err}')
             else:
                 pickle.dump(MBdata, f)
-    with openFile(cacheFile,'wb') as (f, err):
-        if err:
-            print(f'Problem writing cache file: {err}')
-        else:
-            pickle.dump(cache, f)
-            print('saved cache file')
+    if cache:
+        with openFile(cacheFile,'wb') as (f, err):
+            if err:
+                print(f'Problem writing cache file: {err}')
+            else:
+                pickle.dump(cache, f)
+                print('saved cache file')
     # with openFile('library.csv','w') as (f, err):
     #     missing = csv.DictWriter(f, fieldnames=cache[1][0].keys())
     #     missing.writeheader()
@@ -38,6 +41,10 @@ def saveCache(cacheFile, MBfile, MBdata, cache):
 # load the cachefile if it exists and then check to make sure cache is not outdated
 # otherwise just load the library, uploads, playlists, and liked songs from YT music
 def loadCache(ytmusic, cacheFile):
+    uploads = None
+    library = None
+    playlists = None
+    likes = None
     if cacheFile.exists():
         print('Loading uploads and library from cache file')
         with openFile(cacheFile, 'rb') as (f, err):
@@ -47,34 +54,35 @@ def loadCache(ytmusic, cacheFile):
                 uploads, library, playlists, likes = pickle.load(f)
     try:
         check = ytmusic.get_library_upload_songs(1, 'recently_added')
-        if check[0]['videoId'] != uploads[0]['videoId']:
+        if not uploads or check[0]['videoId'] != uploads[0]['videoId']:
             print('getting uploaded songs from YT music')
             uploads = ytmusic.get_library_upload_songs(100000, 'recently_added')
         check = ytmusic.get_library_songs(1, True, 'recently_added')
-        if check[0]['videoId'] != library[0]['videoId']:
+        if not library or check[0]['videoId'] != library[0]['videoId']:
             print('getting library songs from YT music')
             library = ytmusic.get_library_songs(100000, True, 'recently_added')
         print('getting library playlists from YT music')
         playlists = ytmusic.get_library_playlists(500)
         check = ytmusic.get_liked_songs(1)
-        if check['trackCount'] != likes['trackCount']:
+        if not likes or check['trackCount'] != likes['trackCount']:
             print('getting liked songs from YT music')
             likes = ytmusic.get_liked_songs(100000)
     except Exception:
         os.remove(authFile)
         print('Authorization expired. Next run will require pasted headers.')
         exit(1)
-
+    saveCache(cacheFile, None, None, [uploads, library, playlists, likes])
     return uploads, library, playlists, likes
 
-def fillMBdata(MBfile, MBdata, collections):
+def fillMBdata(cacheFile, config, MBfile, collections):
 
+    MBdata = []
     if MBfile.exists():
         with openFile(MBfile,'rb') as (f, err):
             if err:
                 print(f'Problem loading data from MB cache file: {err}')
             else:
-                MBdata = pickle.load()
+                MBdata = pickle.load(f)
                 print(f'Loaded {len(MBdata)} entries from MusicBrainz cache file')
     for name, songList in collections:
         # uploads has a different tag for artist
@@ -93,4 +101,5 @@ def fillMBdata(MBfile, MBdata, collections):
             songInfo = getMBinfo(config, song['title'], song[artist][0]['name'], song['videoId'])
             if songInfo:
                 MBdata.append(songInfo)
-        saveCache(cacheFile, MBfile, MBdata, [uploads, library, playlists, likes])
+    saveCache(cacheFile, MBfile, MBdata, None)
+    return MBdata
