@@ -38,6 +38,7 @@ ytmusic = None
 uploadSongs = False
 notFound = []
 ignoredArtists = []
+ignoredPhrases = []
 firstArg = None
 playlistItems = set()
 MBdata = []
@@ -82,14 +83,17 @@ def processFile(filename):
     global notFound
     tRatio = phraseRatio
 
-    track = mutagen.File(filename)
+    try:
+        track = mutagen.File(filename)
+    catch Exception as e:
+        print(f'Mutagen could not process file ({filename})\n {e}')
     # skip damaged or non-audio file
     if not track:
         return False
-    tmpArtist = track['artist'][0]
-    artist = tmpArtist.split(' feat.')[0] if tmpArtist else '' # truncate artist at feat. so only one artists name is present
-    album = track['album'][0] or ''
-    title = track['title'][0] or ''
+    tmpArtist = track.get('artist')
+    artist = tmpArtist[0].split(' feat.')[0] if tmpArtist else '' # truncate artist at feat. so only one artists name is present
+    album = track['album'][0] if 'album' in track.keys() else ''
+    title = track['title'][0] if 'title' in track.keys() else ''
     # get duration as a familiar M:S formated string
     duration = strftime("%M:%S", gmtime(track.info.length))
 
@@ -110,7 +114,7 @@ def processFile(filename):
         print(f'song "{title}" by {artist}: {duration} is already uploaded')
         return uploadsResult['videoId']
     # search YT music for the song
-    song = searchYT(config, ytmusic, f'{artist} - {title} -karaoke', 'songs', title, artist, track.info.length)
+    song = searchYT(config, ytmusic, f'{artist} - {title}', 'songs', title, artist, track.info.length, ignoredArtists, ignoredPhrases)
 
     # if the song was found
     if song:
@@ -137,12 +141,16 @@ def processFile(filename):
 def loadConfig():
     global config
     global ignoredArtists
+    global ignoredPhrases
     global cacheFile
     global firstArg
     global uploadSongs
     global authFile
     global MBfile
     global configPath
+    global wordRatio
+    global phraseRatio
+    global YTDelay
 
     configPath = userDir / 'config.ini'
     if len(sys.argv) > 1:
@@ -156,6 +164,7 @@ def loadConfig():
         authFile = pathlib.Path(config['DEFAULT']['authfile']) if config['DEFAULT']['authfile'].startswith('/') else userDir / config['DEFAULT']['authfile']
         MBfile = pathlib.Path(config['DEFAULT']['mbfile']) if config['DEFAULT']['mbfile'].startswith('/') else userDir / config['DEFAULT']['mbfile']
         ignoredArtists = json.loads(config.get('DEFAULT', 'ignoredartists'))
+        ignoredPhrases = json.loads(config.get('DEFAULT', 'ignoredphrases'))
         uploadSongs = config['DEFAULT'].getboolean('uploadsongs')
         wordRatio = config['DEFAULT'].getint('wordRatio')
         phraseRatio = config['DEFAULT'].getint('phraseRatio')
@@ -174,6 +183,7 @@ def loadConfig():
         config['DEFAULT']['phraseRatio'] = '89'
         config['DEFAULT']['YTDelay'] = '0.1'
         config['DEFAULT']['ignoredartists'] = json.dumps(['karaoke', 'in the style of', 'tribute'])
+        config['DEFAULT']['ignoredphrases'] = json.dumps(['karaoke', 'in the style of', 'tribute'])
         config['DEFAULT']['ignoredgenres'] = json.dumps(['^punk', '^grunge' ,'^hard', '^metal', '^classical', '^alternative', '^rap', '^hip hop', '^holiday', '^christmas'])
         cacheFile = userDir / 'cache.p'
         authFile = userDir / 'headers_auth.json'
@@ -182,6 +192,7 @@ def loadConfig():
         phraseRatio = 89
         YTDelay = 0.1
         ignoredArtists = ['karaoke', 'in the style of', 'tribute']
+        ignoredPhrases = ['karaoke', 'in the style of', 'tribute']
         print('Writing config file')
         with openFile(configPath, 'w') as (configFile, err):
             if err:

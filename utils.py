@@ -13,13 +13,13 @@ import contextlib
 from recordingDate import recurse_relations
 
 # perform the YT search and return the (hopefully) best result
-def searchYT(config, ytmusic, query, type, title, artist, duration, ignoredArtists):
+def searchYT(config, ytmusic, query, type, title, artist, duration, ignoredArtists, ignoredPhrases):
     wordRatio = config['DEFAULT'].getint('wordRatio')
     phraseRatio = config['DEFAULT'].getint('phraseRatio')
     aRatio = wordRatio if len(artist.split(' ')) == 1 else phraseRatio
     difference = 100
 
-    results = ytmusic.search(query, type, 50)
+    results = ytmusic.search(query, type, None, 50)
     # make sure we got some results
     if results:
         # first make sure the matches are close
@@ -30,9 +30,15 @@ def searchYT(config, ytmusic, query, type, title, artist, duration, ignoredArtis
         if matchingSongs:
             # return the song with the duration that is closest to the original song
             for song in matchingSongs:
+                d = song.get('duration')
                 if any(x for x in song['artists'] for y in ignoredArtists if x['name'].find(y) != -1):
                     continue
-                t = datetime.strptime(song['duration'], '%M:%S')
+                if [x for x in ignoredPhrases if x in song.get('title')]:
+                    print(f'Skipping result: {song.get("title")} by {song.get("artist")}')
+                    continue
+                if not d:
+                    continue
+                t = datetime.strptime(d, '%M:%S')
                 matchDuration = timedelta(minutes=t.minute, seconds=t.second)
                 diff = abs(matchDuration.seconds - duration)
                 if diff < difference:
@@ -53,7 +59,7 @@ def filterSongs(songList, checks, key, oneResult, matchAll):
 def keyCheck(checks, item, matchAll):
     bools = []
     for key, value, ratio in checks:
-        if not item[key]:
+        if not item.get(key):
             continue
         if isinstance(item[key], (list, dict)):
             temp = process.extractOne(value, [(a['name'] if ('name' in a) else a) for a in [item[key]]], scorer=fuzz.token_set_ratio)
