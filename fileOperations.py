@@ -101,5 +101,5 @@ def fillMBdata(cacheFile, config, MBfile, collections):
             songInfo = getMBinfo(config, song['title'], song[artist][0]['name'], song['videoId'])
             if songInfo:
                 MBdata.append(songInfo)
-    saveCache(cacheFile, MBfile, MBdata, None)
+        saveCache(cacheFile, MBfile, MBdata, None)
     return MBdata

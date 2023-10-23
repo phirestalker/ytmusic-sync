@@ -10,7 +10,8 @@ import sys
 import re
 import contextlib
 
-from recordingDate import recurse_relations
+# from recordingDate import recurse_relations
+from OldestDate import DateWrapper, _get_oldest_date
 
 # perform the YT search and return the (hopefully) best result
 def searchYT(config, ytmusic, query, type, title, artist, duration, ignoredArtists, ignoredPhrases):
@@ -142,9 +143,9 @@ def getMBinfo(config, title, artist, videoId):
     song = filterSongs(results, [('title', title, phraseRatio), ('artist-credit', artist, aRatio)], 'length', True, True)
     if not song:
         return None
-    oldest_release = song if song.get('year') else {'year': 2023}
+    oldest_release = DateWrapper(int(song['year'])) if song.get('year') else None
     # get the earliest release date for a song instead of its re-release date
-    (oldest_release, relation_type) = recurse_relations(song['id'], oldest_release, relation_type)
+    oldest_release = _get_oldest_date(song['id'], None)
     # track itself contains genres or folksonomy tags as MusicBrainz calls them
     if 'tag-list' in song:
         tagList = [t['name'] for t in song['tag-list']]
@@ -154,7 +155,7 @@ def getMBinfo(config, title, artist, videoId):
     # give up already
     else:
         tagList = []
-    return {'videoId': videoId, 'duration': song['length'], 'year': oldest_release['year'], 'genres': tagList, 'mbID': song['id']}
+    return {'videoId': videoId, 'duration': song['length'], 'year': (oldest_release.y if oldest_release else None), 'genres': tagList, 'mbID': song['id']}
 
 
 # return the set of rules for the playlist
@@ -181,6 +182,13 @@ def getRule(ruleSection):
         # genres preceeded with ^ are negative genres. also, remove the ^ for easier matching later
         rule['notGenre'] = [r.replace('^', '') for r in temp if r.startswith('^')]
     return rule
+
+def common_member(a, b):
+    a_set = set(a)
+    b_set = set(b)
+    if len(a_set.intersection(b_set)) > 0:
+        return(True)
+    return(False)
 
 @contextlib.contextmanager
 def openFile(filename, mode='r'):

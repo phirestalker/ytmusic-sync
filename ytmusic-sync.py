@@ -21,6 +21,7 @@ import musicbrainzngs
 
 from utils import *
 from fileOperations import *
+from OldestDate import setMB
 
 
 appName = 'YT Music Sync'
@@ -85,7 +86,7 @@ def processFile(filename):
 
     try:
         track = mutagen.File(filename)
-    catch Exception as e:
+    except Exception as e:
         print(f'Mutagen could not process file ({filename})\n {e}')
     # skip damaged or non-audio file
     if not track:
@@ -170,7 +171,7 @@ def loadConfig():
         phraseRatio = config['DEFAULT'].getint('phraseRatio')
         YTDelay = config['DEFAULT'].getfloat('YTDelay')
         musicbrainzngs.set_hostname(config['DEFAULT']['mbhost'])
-        musicbrainzngs.set_rate_limit(1, config['DEFAULT'].getint('mbrateLimit'))
+        musicbrainzngs.set_rate_limit(1, config['DEFAULT'].getfloat('mbrateLimit'))
     else:
         config['DEFAULT'] = {}
         config['DEFAULT']['cachefile'] = 'cache.p'
@@ -414,22 +415,22 @@ def smartPlaylists():
                 continue
             if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year'] and int(song['year']) in rules[smart['title']]['year']:
                 if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
-                    if [g for g in song['genres'] for r in rules[smart['title']]['genre'] if g in r]:
-                        if [r for r in rules[smart['title']]['notGenre'] for g in song['genres'] if g in r]:
+                    if common_member(song['genres'], rules[smart['title']]['genre']):
+                        if common_member(rules[smart['title']]['notGenre'], song['genres']):
                             continue
                         # track matches all rules so add it to playlist
                         addTracks[smart['id']].append(song['videoId'])
                         # we are done processing this playlist for this track
                         continue
                 else:
-                    if [r for r in rules[smart['title']]['notGenre'] for g in song['genres'] if g in r]:
+                    if common_member(rules[smart['title']]['notGenre'], song['genres']):
                         continue
                     # track matches all rules present (no genre rules)
                     addTracks[smart['id']].append(song['videoId'])
                     continue
             if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
-                if [g for g in song['genres'] for r in rules[smart['title']]['genre'] if g in r]:
-                    if [r for r in rules[smart['title']]['notGenre'] for g in song['genres'] if g in r]:
+                if common_member(song['genres'], rules[smart['title']]['genre']):
+                    if if common_member(rules[smart['title']]['notGenre'], song['genres']):
                         continue
                     if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year']:
                         if int(song['year']) in rules[smart['title']]['year']:
@@ -463,6 +464,7 @@ def deleteThis(query):
 loadConfig()
 authenticate()
 sys.excepthook = myExceptHandler
+# setMB(config, appVer)
 uploads, library, playlists, likes = loadCache(ytmusic, cacheFile)
 commandOptions(firstArg, sys.argv[2:] or None)
 
