@@ -5,16 +5,6 @@ from dateutil import parser
 
 import musicbrainzngs
 
-# def setMB(config, appVer):
-#     musicbrainzngs.set_hostname(config['DEFAULT']['mbhost'])
-#     musicbrainzngs.set_rate_limit(1, config['DEFAULT'].getfloat('mbrateLimit'))
-#     musicbrainzngs.set_useragent(
-#         'Youtube Music Sync',
-#         appVer,
-#         ''
-#     )
-
-
 # Extract first valid work_id from recording
 def _get_work_id_from_recording(recording):
     work_id = None
@@ -264,7 +254,7 @@ def _extract_oldest_release_date(recordings, starting_date, is_cover, artist_ids
     return oldest_date
 
 # Iterates through a list of recordings and returns oldest date
-def _iterate_dates(recordings, starting_date, is_cover, artist_ids, approach = 'releases'):
+def _iterate_dates(recordings, starting_date, is_cover, artist_ids, approach):
     oldest_date = starting_date
 
     # Look for oldest recording date
@@ -277,7 +267,7 @@ def _iterate_dates(recordings, starting_date, is_cover, artist_ids, approach = '
 
     return None if oldest_date == DateWrapper.today() else oldest_date
 
-def _get_oldest_date(recording_id, item_date):
+def _get_oldest_date(recording_id, item_date, approach):
     recording = _get_recording(recording_id)
     is_cover = _is_cover(recording)
     work_id = _get_work_id_from_recording(recording)

@@ -21,7 +21,6 @@ import musicbrainzngs
 
 from utils import *
 from fileOperations import *
-from OldestDate import setMB
 
 
 appName = 'YT Music Sync'
@@ -183,6 +182,7 @@ def loadConfig():
         config['DEFAULT']['wordRatio'] = '96'
         config['DEFAULT']['phraseRatio'] = '89'
         config['DEFAULT']['YTDelay'] = '0.1'
+        config['DEFAULT']['approach'] = 'hybrid'
         config['DEFAULT']['ignoredartists'] = json.dumps(['karaoke', 'in the style of', 'tribute'])
         config['DEFAULT']['ignoredphrases'] = json.dumps(['karaoke', 'in the style of', 'tribute'])
         config['DEFAULT']['ignoredgenres'] = json.dumps(['^punk', '^grunge' ,'^hard', '^metal', '^classical', '^alternative', '^rap', '^hip hop', '^holiday', '^christmas'])
@@ -430,7 +430,7 @@ def smartPlaylists():
                     continue
             if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
                 if common_member(song['genres'], rules[smart['title']]['genre']):
-                    if if common_member(rules[smart['title']]['notGenre'], song['genres']):
+                    if common_member(rules[smart['title']]['notGenre'], song['genres']):
                         continue
                     if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year']:
                         if int(song['year']) in rules[smart['title']]['year']:

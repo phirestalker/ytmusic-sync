@@ -11,7 +11,9 @@ import re
 import contextlib
 
 # from recordingDate import recurse_relations
-from OldestDate import DateWrapper, _get_oldest_date
+from beetsplug.oldestdate import OldestDatePlugin
+
+od = OldestDatePlugin()
 
 # perform the YT search and return the (hopefully) best result
 def searchYT(config, ytmusic, query, type, title, artist, duration, ignoredArtists, ignoredPhrases):
@@ -131,6 +133,10 @@ def performQuery(config, query, collection, exact):
 
 # get the release year and the genres for one song from MusicBrainz
 def getMBinfo(config, title, artist, videoId):
+    od.config['approach'] = config['DEFAULT'].get('approach', 'hybrid')
+    od.config['musicbrainz']['host'] = config['DEFAULT']['mbhost']
+    od.config['musicbrainz']['ratelimit'] = config['DEFAULT'].getfloat('mbrateLimit')
+
     wordRatio = config['DEFAULT'].getint('wordRatio')
     phraseRatio = config['DEFAULT'].getint('phraseRatio')
     relation_type = None
@@ -143,9 +149,8 @@ def getMBinfo(config, title, artist, videoId):
     song = filterSongs(results, [('title', title, phraseRatio), ('artist-credit', artist, aRatio)], 'length', True, True)
     if not song:
         return None
-    oldest_release = DateWrapper(int(song['year'])) if song.get('year') else None
     # get the earliest release date for a song instead of its re-release date
-    oldest_release = _get_oldest_date(song['id'], None)
+    oldest_release = od._get_oldest_date(song['id'], None)
     # track itself contains genres or folksonomy tags as MusicBrainz calls them
     if 'tag-list' in song:
         tagList = [t['name'] for t in song['tag-list']]
