@@ -408,10 +408,10 @@ def smartPlaylists():
         smartPlaylists.append(ytmusic.get_playlist(pListID, 10000))
         rules[pName] = getRule(config[pName])
         addTracks[pListID] = []
-    for song in tqdm(MBdata):
+    for videoId, song in tqdm(MBdata.items()):
         for smart in smartPlaylists:
             # skip tracks already in playlist
-            if next((s for s in smart['tracks'] if s['videoId'] == song['videoId']), None):
+            if next((s for s in smart['tracks'] if s['videoId'] == videoId), None):
                 continue
             if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year'] and int(song['year']) in rules[smart['title']]['year']:
                 if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
@@ -419,14 +419,14 @@ def smartPlaylists():
                         if common_member(rules[smart['title']]['notGenre'], song['genres']):
                             continue
                         # track matches all rules so add it to playlist
-                        addTracks[smart['id']].append(song['videoId'])
+                        addTracks[smart['id']].append(videoId)
                         # we are done processing this playlist for this track
                         continue
                 else:
                     if common_member(rules[smart['title']]['notGenre'], song['genres']):
                         continue
                     # track matches all rules present (no genre rules)
-                    addTracks[smart['id']].append(song['videoId'])
+                    addTracks[smart['id']].append(videoId)
                     continue
             if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
                 if common_member(song['genres'], rules[smart['title']]['genre']):
@@ -434,10 +434,10 @@ def smartPlaylists():
                         continue
                     if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year']:
                         if int(song['year']) in rules[smart['title']]['year']:
-                            addTracks[smart['id']].append(song['videoId'])
+                            addTracks[smart['id']].append(videoId)
                             continue
                     else:
-                        addTracks[smart['id']].append(song['videoId'])
+                        addTracks[smart['id']].append(videoId)
     # add collected sonngs
     for id, tracks in addTracks.items():
         if tracks:

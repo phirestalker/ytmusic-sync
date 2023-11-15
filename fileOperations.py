@@ -76,13 +76,14 @@ def loadCache(ytmusic, cacheFile):
 
 def fillMBdata(cacheFile, config, MBfile, collections):
 
-    MBdata = []
+    MBdata = None
     if MBfile.exists():
         with openFile(MBfile,'rb') as (f, err):
             if err:
                 print(f'Problem loading data from MB cache file: {err}')
             else:
                 MBdata = pickle.load(f)
+                MBdata = convertMBdata(MBdata)
                 print(f'Loaded {len(MBdata)} entries from MusicBrainz cache file')
     for name, songList in collections:
         # uploads has a different tag for artist
@@ -90,7 +91,7 @@ def fillMBdata(cacheFile, config, MBfile, collections):
         print(f' Getting MB data for songs in {name}')
         for song in tqdm(songList):
             # skip songs already pulled from MusicBrainz
-            if MBdata and next((s for s in MBdata if s['videoId'] == song['videoId']), None):
+            if song['videoId'] in MBdata:
                 continue
             # if 'duration' in song:
             #     t = datetime.strptime(song['duration'], '%M:%S')
@@ -98,8 +99,17 @@ def fillMBdata(cacheFile, config, MBfile, collections):
             #     duration = int(durationDelta.total_seconds() * 1000)
             # else:
             #     duration = 0
-            songInfo = getMBinfo(config, song['title'], song[artist][0]['name'], song['videoId'])
+            songInfo = getMBinfo(config, song['title'], song[artist][0]['name'])
             if songInfo:
-                MBdata.append(songInfo)
+                MBdata[song['videoId']] = songInfo
         saveCache(cacheFile, MBfile, MBdata, None)
     return MBdata
+
+def convertMBdata(MBdata):
+    if isinstance(MBdata, list):
+        converted = {}
+        for s in MBdata:
+            converted[s['videoId']] = {'duration': s['duration'], 'year': s['year'], 'genres': s['genres'], 'mbID': s['mbID']}
+        return converted
+    else:
+        return MBdata

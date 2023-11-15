@@ -132,7 +132,7 @@ def performQuery(config, query, collection, exact):
     return filterSongs(collection, checks, 'title', False, matchAll)
 
 # get the release year and the genres for one song from MusicBrainz
-def getMBinfo(config, title, artist, videoId):
+def getMBinfo(config, title, artist):
     od.config['approach'] = config['DEFAULT'].get('approach', 'hybrid')
     od.config['musicbrainz']['host'] = config['DEFAULT']['mbhost']
     od.config['musicbrainz']['ratelimit'] = config['DEFAULT'].getfloat('mbrateLimit')
@@ -160,7 +160,7 @@ def getMBinfo(config, title, artist, videoId):
     # give up already
     else:
         tagList = []
-    return {'videoId': videoId, 'duration': song['length'], 'year': (oldest_release.y if oldest_release else None), 'genres': tagList, 'mbID': song['id']}
+    return {'duration': song['length'], 'year': (oldest_release.y if oldest_release else None), 'genres': tagList, 'mbID': song['id']}
 
 
 # return the set of rules for the playlist
