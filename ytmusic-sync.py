@@ -340,6 +340,18 @@ def loadDir(query):
     else:
         print(f'Invalid directory: {query}')
 
+def updatePlaylist(name, tracks):
+    tracks = set(tracks)
+    pName = next((p for p in playlists if p['title'] == name), None)
+    pListID = ytmusic.create_playlist(name, '') if not pName else pName['playlistId']
+    print(f'Downloading track list for playlist "{name}"')
+    tempPlist = ytmusic.get_playlist(pListID, 10000)
+    existing = set([t['videoId'] for t in tempPlist['tracks']])
+    tracks -= existing
+    if tracks:
+        print(f'Adding {len(tracks)} songs to playlist "{name}"')
+        ytmusic.add_playlist_items(pListID,tracks,None,False)
+
 # process playlist file
 def loadPlaylist(query):
     if os.path.isfile(query):
@@ -350,12 +362,6 @@ def loadPlaylist(query):
             lines = playlist.readlines()
             plistName = os.path.splitext(os.path.basename(playlist.name))[0]
 
-            # see if playlist already exists and create one if not
-            pName = next((p for p in playlists if p['title'] == plistName), None)
-            pListID = ytmusic.create_playlist(plistName, '') if not pName else pName['playlistId']
-            tempPlist = ytmusic.get_playlist(pListID, 10000)
-            existing = set([t['videoId'] for t in tempPlist['tracks']])
-
             for line in lines:
                 # skip comment lines in the playlist file
                 if line.startswith('#'):
@@ -364,10 +370,7 @@ def loadPlaylist(query):
                 if videoId:
                     playlistItems.add(videoId)
 
-            # remove duplicates
-            playlistItems -= existing
-            # add all items to playlist at once
-            ytmusic.add_playlist_items(pListID,playlistItems,None,True)
+            updatePlaylist(plistName,playlistItems)
     else:
         print(f'{query} is not a valid file.')
 
@@ -390,60 +393,45 @@ def addLikes():
 def smartPlaylists():
     global config
     MBdata = fillMBdata(cacheFile, config, MBfile, [('uploads', uploads), ('library', library), ('likes', likes['tracks'])])
-    addTracks = {}
     libraryPlists = config.sections() or []
-    rules = {}
     smartPlaylists = []
 
     if not MBdata or not libraryPlists:
         print('No smart playlists found in config')
         exit(0)
-    for pName in libraryPlists:
-        # check if a playlist with pName already exists
-        plist = next((p for p in playlists if p['title'] == pName), None)
-        # create playlist if necessary
-        pListID = plist['playlistId'] if plist else ytmusic.create_playlist(pName, '')
-        # grab the playlist and its list of tracks
-        print(f'Downloading track list for playlist "{pName}"')
-        smartPlaylists.append(ytmusic.get_playlist(pListID, 10000))
-        rules[pName] = getRule(config[pName])
-        addTracks[pListID] = []
+    rules = {n:getRule(config[n]) for n in libraryPlists}
+    addTracks = {n:[] for n in libraryPlists}
     for videoId, song in tqdm(MBdata.items()):
-        for smart in smartPlaylists:
-            # skip tracks already in playlist
-            if next((s for s in smart['tracks'] if s['videoId'] == videoId), None):
-                continue
-            if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year'] and int(song['year']) in rules[smart['title']]['year']:
-                if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
-                    if common_member(song['genres'], rules[smart['title']]['genre']):
-                        if common_member(rules[smart['title']]['notGenre'], song['genres']):
+        for pName in libraryPlists:
+            if 'year' in rules[pName].keys() and 'year' in song.keys() and song['year'] and int(song['year']) in rules[pName]['year']:
+                if 'genre' in rules[pName].keys() and 'genres' in song.keys() and song['genres']:
+                    if common_member(song['genres'], rules[pName]['genre']):
+                        if common_member(rules[pName]['notGenre'], song['genres']):
                             continue
                         # track matches all rules so add it to playlist
-                        addTracks[smart['id']].append(videoId)
+                        addTracks[pName].append(videoId)
                         # we are done processing this playlist for this track
                         continue
                 else:
-                    if common_member(rules[smart['title']]['notGenre'], song['genres']):
+                    if common_member(rules[pName]['notGenre'], song['genres']):
                         continue
                     # track matches all rules present (no genre rules)
-                    addTracks[smart['id']].append(videoId)
+                    addTracks[pName].append(videoId)
                     continue
-            if 'genre' in rules[smart['title']].keys() and 'genres' in song.keys() and song['genres']:
-                if common_member(song['genres'], rules[smart['title']]['genre']):
-                    if common_member(rules[smart['title']]['notGenre'], song['genres']):
+            if 'genre' in rules[pName].keys() and 'genres' in song.keys() and song['genres']:
+                if common_member(song['genres'], rules[pName]['genre']):
+                    if common_member(rules[pName]['notGenre'], song['genres']):
                         continue
-                    if 'year' in rules[smart['title']].keys() and 'year' in song.keys() and song['year']:
-                        if int(song['year']) in rules[smart['title']]['year']:
-                            addTracks[smart['id']].append(videoId)
+                    if 'year' in rules[pName].keys() and 'year' in song.keys() and song['year']:
+                        if int(song['year']) in rules[pName]['year']:
+                            addTracks[pName].append(videoId)
                             continue
                     else:
-                        addTracks[smart['id']].append(videoId)
+                        addTracks[pName].append(videoId)
     # add collected sonngs
-    for id, tracks in addTracks.items():
+    for name, tracks in addTracks.items():
         if tracks:
-            name = next(p['title'] for p in smartPlaylists if p['id'] == id)
-            print(f'Adding {len(tracks)} songs to playlist "{name}"')
-            ytmusic.add_playlist_items(id,tracks,None,True)
+            updatePlaylist(name,tracks)
 
 # delete items from YT Music
 def deleteThis(query):
