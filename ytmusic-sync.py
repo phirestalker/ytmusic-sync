@@ -405,22 +405,24 @@ def smartPlaylists():
         for pName in libraryPlists:
             if 'year' in rules[pName].keys() and 'year' in song.keys() and song['year'] and int(song['year']) in rules[pName]['year']:
                 if 'genre' in rules[pName].keys() and 'genres' in song.keys() and song['genres']:
-                    if common_member(song['genres'], rules[pName]['genre']):
-                        if common_member(rules[pName]['notGenre'], song['genres']):
+                    #if common_member(song['genres'], rules[pName]['genre']):
+                    if [r for r in rules[pName]['genre'] for g in song['genres'] if r in g]:
+                        #if common_member(rules[pName]['notGenre'], song['genres']):
+                        if [r for r in rules[pName]['notGenre'] for g in song['genres'] if r in g]:
                             continue
                         # track matches all rules so add it to playlist
                         addTracks[pName].append(videoId)
                         # we are done processing this playlist for this track
                         continue
                 else:
-                    if common_member(rules[pName]['notGenre'], song['genres']):
+                    if [r for r in rules[pName]['notGenre'] for g in song['genres'] if r in g]:
                         continue
                     # track matches all rules present (no genre rules)
                     addTracks[pName].append(videoId)
                     continue
             if 'genre' in rules[pName].keys() and 'genres' in song.keys() and song['genres']:
-                if common_member(song['genres'], rules[pName]['genre']):
-                    if common_member(rules[pName]['notGenre'], song['genres']):
+                if [r for r in rules[pName]['genre'] for g in song['genres'] if r in g]:
+                    if [r for r in rules[pName]['notGenre'] for g in song['genres'] if r in g]:
                         continue
                     if 'year' in rules[pName].keys() and 'year' in song.keys() and song['year']:
                         if int(song['year']) in rules[pName]['year']:
