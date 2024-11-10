@@ -7,7 +7,7 @@ import os, subprocess, platform
 import pathlib
 import json
 import pickle
-import mutagen
+from phrydy import MediaFileExtended
 import configparser
 import ytmusicapi
 from ytmusicapi import YTMusic
@@ -76,26 +76,26 @@ musicbrainzngs.set_useragent(
     ''
 )
 
-# perform add to library, playlist, or uploads for each file
+# perform add to library or uploads for each file
 # filename: the full path to the file
-# playlist: name of playlist to add track to
 def processFile(filename):
     global notFound
     tRatio = phraseRatio
 
     try:
-        track = mutagen.File(filename)
+        track = MediaFileExtended(filename)
     except Exception as e:
-        print(f'Mutagen could not process file ({filename})\n {e}')
+        print(f'\tCould not process file ({filename})')
+        return False
     # skip damaged or non-audio file
     if not track:
         return False
-    tmpArtist = track.get('artist')
-    artist = tmpArtist[0].split(' feat.')[0] if tmpArtist else '' # truncate artist at feat. so only one artists name is present
-    album = track['album'][0] if 'album' in track.keys() else ''
-    title = track['title'][0] if 'title' in track.keys() else ''
+    tmpArtist = track.artist
+    artist = tmpArtist.split(' feat.')[0] if tmpArtist else '' # truncate artist at feat. so only one artists name is present
+    album = track.album
+    title = track.title
     # get duration as a familiar M:S formated string
-    duration = strftime("%M:%S", gmtime(track.info.length))
+    duration = strftime("%M:%S", gmtime(track.length))
 
     # skip songs missing artist or title
     if not artist or not title:
@@ -114,7 +114,7 @@ def processFile(filename):
         print(f'song "{title}" by {artist}: {duration} is already uploaded')
         return uploadsResult['videoId']
     # search YT music for the song
-    song = searchYT(config, ytmusic, f'{artist} - {title}', 'songs', title, artist, track.info.length, ignoredArtists, ignoredPhrases)
+    song = searchYT(config, ytmusic, f'{artist} - {title}', 'songs', title, artist, track.length, ignoredArtists, ignoredPhrases)
 
     # if the song was found
     if song:
