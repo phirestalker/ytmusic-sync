@@ -1,0 +1,8 @@
+appdirs==1.4.4
+beets-oldestdate==1.1.4
+fuzzywuzzy==0.18.0
+musicbrainzngs==0.7.1
+phrydy==4.0.0
+tqdm==4.65.0
+ytmusicapi==1.8.2
+python-levenshtein==0.26.1

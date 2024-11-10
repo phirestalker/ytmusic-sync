@@ -33,11 +33,11 @@ jobs:
 
       - name: Build single executable
         run: |
-          pyinstaller --onefile --name my_program main.py
+          pyinstaller --onefile --name ytmusic-sync main.py
           # Ensure `main.py` imports any other Python files in your program.
 
       - name: Upload executable
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-python-3.10-my_program
-          path: dist/my_program*
+          name: ${{ matrix.os }}-ytmusic-sync
+          path: dist/ytmusic-sync*
