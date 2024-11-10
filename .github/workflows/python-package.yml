@@ -13,7 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.10]  # Only Python 3.10
+        python-version: [3.10]
+        arch: [amd64, arm64]
     runs-on: ${{ matrix.os }}
     
     steps:
@@ -39,5 +40,5 @@ jobs:
       - name: Upload executable
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-ytmusic-sync
+          name: ${{ matrix.os }}--${{ matrix.arch }}-ytmusic-sync
           path: dist/ytmusic-sync*
