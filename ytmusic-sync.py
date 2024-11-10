@@ -152,6 +152,8 @@ def loadConfig():
     global phraseRatio
     global YTDelay
 
+    if not userDir.exists():
+        os.makedirs(userDir)
     configPath = userDir / 'config.ini'
     if len(sys.argv) > 1:
         firstArg = sys.argv[1]
