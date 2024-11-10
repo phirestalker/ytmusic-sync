@@ -34,7 +34,7 @@ jobs:
 
       - name: Build single executable
         run: |
-          pyinstaller --onefile --name ytmusic-sync main.py
+          pyinstaller --onefile --name ytmusic-sync ytmusic-sync.py
           # Ensure `main.py` imports any other Python files in your program.
 
       - name: Upload executable
